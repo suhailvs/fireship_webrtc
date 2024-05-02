@@ -2,7 +2,7 @@ import './style.css'
 
 import { initializeApp } from "firebase/app";
 
-import { getFirestore, collection,doc,setDoc, onSnapshot, addDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection,doc,setDoc, onSnapshot, addDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 // import firebase from 'firebase/app';
 // import 'firebase/firestore';
@@ -140,14 +140,15 @@ answerButton.onclick = async () => {
   const offerCandidates = collection(callDoc, 'offerCandidates'); //callDoc.collection('offerCandidates');
 
   pc.onicecandidate = (event) => {
-    event.candidate && answerCandidates.add(event.candidate.toJSON());
+    // addDoc(offerCandidates, event.candidate.toJSON());
+    event.candidate && addDoc(answerCandidates, event.candidate.toJSON());
   };
 
   const callData = (await getDoc(callDoc)).data();//(await callDoc.get()).data();
 
   const offerDescription = callData.offer;
-  console.log(offerDescription)
-  await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
+  console.log(offerDescription, callData)
+  await pc.setRemoteDescription(new RTCSessionDescription(callData));
 
   const answerDescription = await pc.createAnswer();
   await pc.setLocalDescription(answerDescription);
@@ -157,9 +158,9 @@ answerButton.onclick = async () => {
     sdp: answerDescription.sdp,
   };
 
-  await callDoc.update({ answer });
+  await updateDoc(callDoc, { answer });
 
-  offerCandidates.onSnapshot((snapshot) => {
+  onSnapshot(offerCandidates, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
       console.log(change);
       if (change.type === 'added') {
